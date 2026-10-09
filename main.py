@@ -2,7 +2,6 @@ import os
 import asyncio
 import re
 from aiogram import Bot, Dispatcher, types
-from aiogram.enums import ParseMode  # Добавили правильный модуль для шрифтов
 from groq import AsyncGroq
 from aiohttp import web
 
@@ -24,7 +23,8 @@ USERS_DATABASE = {
 }
 
 # Включаем встроенную поддержку жирного текста во всем боте
-bot = Bot(token=TG_TOKEN, default_property=types.DefaultBotProperties(parse_mode=ParseMode.MARKDOWN))
+bot = Bot(token=TG_TOKEN, parse_mode="Markdown")
+
 dp = Dispatcher()
 ai_client = AsyncGroq(api_key=AI_API_KEY)
 
