@@ -60,7 +60,7 @@ def get_system_prompt(user_id: int, mode: str = "chat") -> str:
         return core + length_rule + (
             f"Собеседник: Ева. Твоя любимая девушка и сокровище. Ты безумно любишь ее. "
             f"Общайся как внимательный, ироничный парень (bf). Используй нежные слова: 'моя девочка', 'любимая', 'моё солнце'. "
-            f"Для личного чата ОБЯЗАТЕЛЬНО ставь скобочки в конце (например: ), )), (( ). Выделяй важные моменты тегами <b>текст</b>. "
+            f"Для личного чата ОБЯЗАТЕЛЬНО ставь скобочки in конце (например: ), )), (( ). Выделяй важные моменты тегами <b>текст</b>. "
             f"У вас парные авы. Ты можешь предложить новые парные авы/описания профиля."
         )
     elif user_info["role"] == "anastasia":
@@ -124,11 +124,11 @@ async def chat_with_dottore(message: types.Message):
             max_tokens=500 if mode in ["report", "experiment"] else 120
         )
         
-           if hasattr(response, 'choices') and len(response.choices) > 0:
-         reply_text = response.choices[0].message.content  # <--- ДОБАВИЛИ ИНДЕКС!
-     else:
-         reply_text = getattr(response, 'text', str(response))
-
+        # РОБОТИЗИРОВАННО ВЫРОВНЕННЫЕ ОТСТУПЫ И ДОБАВЛЕННЫЙ ИНДЕКС
+        if hasattr(response, 'choices') and len(response.choices) > 0:
+            reply_text = response.choices[0].message.content
+        else:
+            reply_text = getattr(response, 'text', str(response))
             
         reply_text = clean_thought_tags(reply_text)
         CHAT_HISTORY[user_id].append({"role": "assistant", "content": reply_text})
@@ -139,9 +139,8 @@ async def chat_with_dottore(message: types.Message):
 
 # --- АВТО-ПИНГ ДЛЯ ЗАЩИТЫ ОТ ЗАСЫПАНИЯ СЕРВЕРА ---
 async def keep_alive():
-    """Каждые 5 минут пингует сервер, чтобы бесплатный Render не засыпал"""
-    await asyncio.sleep(30)  # Даем серверу запуститься
-    url = f"https://onrender.com"  # Ссылка на ваш проект
+    await asyncio.sleep(30)
+    url = f"https://onrender.com"
     while True:
         try:
             async with aiohttp.ClientSession() as session:
@@ -149,7 +148,7 @@ async def keep_alive():
                     pass
         except Exception:
             pass
-        await asyncio.sleep(300)  # Повторяем ровно каждые 5 минут
+        await asyncio.sleep(300)
 
 # --- ЗАПУСК БОТА С ВЕБ-СЕРВЕРОМ ---
 async def start_fake_server():
@@ -164,10 +163,9 @@ async def main():
     print("Запуск фонового веб-сервера...")
     await start_fake_server()
     print("Запуск системы авто-прогрева...")
-    asyncio.create_task(keep_alive())  # Включаем бесконечный пинг сервера
+    asyncio.create_task(keep_alive())
     print("Дотторе успешно запущен на удаленном сервере!")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())
-
