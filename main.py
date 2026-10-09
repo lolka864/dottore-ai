@@ -1,11 +1,12 @@
-import os  # Вот он, этот модуль теперь на месте!
+import os
 import asyncio
 import re
 from aiogram import Bot, Dispatcher, types
 from groq import AsyncGroq
+from aiohttp import web
 
 # =====================================================================
-# 1. НАСТРОЙКИ И КЛЮЧИ (Безопасная версия для GitHub)
+# 1. БЕЗОПАСНЫЕ НАСТРОЙКИ (Ключи подгружаются из системы хостинга)
 # =====================================================================
 TG_TOKEN = os.getenv("TG_TOKEN")
 AI_API_KEY = os.getenv("AI_API_KEY")
@@ -13,11 +14,8 @@ AI_API_KEY = os.getenv("AI_API_KEY")
 # Используем единственную рабочую текстовую модель на Groq
 AI_MODEL = "qwen/qwen3.8-27b" 
 
-# Используем единственную рабочую текстовую модель на Groq
-AI_MODEL = "qwen/qwen3.8-27b" 
-
 # =====================================================================
-# 2. КАРТОТЕКА ПОЛЬЗОВАТЕЛЕЙ
+# 2. КАРТОТЕКА ПОЛЬЗОВАТЕЛЕЙ (Узнавание по Telegram ID)
 # =====================================================================
 USERS_DATABASE = {
     8454617664: {
@@ -43,7 +41,7 @@ def get_system_prompt(user_id: int) -> str:
     )
 
 def clean_thought_tags(text: str) -> str:
-    """Удаляет внутренние размышления модели <think>"""
+    """Удаляет внутренние технические размышления модели <think>"""
     if not text:
         return ""
     return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
@@ -53,9 +51,9 @@ def clean_thought_tags(text: str) -> str:
 async def chat_with_dottore(message: types.Message):
     user_id = message.from_user.id
     
-    # Игнорируем системные сообщения, если это фото (для них сделаем заглушку)
+    # Заглушка, если пользователь отправил фото
     if message.photo:
-        await message.reply("*Дотторе брезгливо оттолкнул снимок:* Моя текущая модель Qwen временно отключила оптические сенсоры на сервере Groq. Опиши свой образец текстом, Ева.")
+        await message.reply("*Дотторе брезгливо оттолкнул снимок:* Моя текущая модель Qwen временно отключила оптические сенсоры на сервере. Опиши свой образец текстом, Ева.")
         return
 
     await bot.send_chat_action(chat_id=message.chat.id, action="typing")
@@ -70,17 +68,28 @@ async def chat_with_dottore(message: types.Message):
             temperature=0.85
         )
         
-        # Безопасное извлечение текста специально для библиотеки groq
-        reply_text = response.choices[0].message.content
+        reply_text = response.choices.message.content
         reply_text = clean_thought_tags(reply_text)
         
         await message.reply(reply_text)
     except Exception as e:
         await message.reply(f"*Дотторе раздраженно постучал по приборам:* Ошибка связи: {e}")
 
-# --- ЗАПУСК БОТА ---
+# --- ЗАПУСК БОТА С ВЕБ-СЕРВЕРОМ ДЛЯ ОБМАНА ХОСТИНГА ---
+async def start_fake_server():
+    """Создает порт, чтобы бесплатный Render думал, что это сайт"""
+    app = web.Application()
+    app.router.add_get('/', lambda r: web.Response(text="Лаборатория Дотторе активна."))
+    runner = web.AppRunner(app)
+    await runner.setup()
+    # Сервер автоматически займет порт 10000, который требует Render
+    site = web.TCPSite(runner, '0.0.0.0', 10000)
+    await site.start()
+
 async def main():
-    print("Дотторе успешно запущен на базе Groq!")
+    print("Запуск фонового веб-сервера...")
+    await start_fake_server()
+    print("Дотторе успешно запущен на удаленном сервере!")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
