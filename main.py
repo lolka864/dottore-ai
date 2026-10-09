@@ -98,10 +98,11 @@ async def chat_with_dottore(message: types.Message):
             max_tokens=60
         )
         
-        if hasattr(response, 'choices') and len(response.choices) > 0:
-            reply_text = response.choices.message.content
-        else:
-            reply_text = getattr(response, 'text', str(response))
+             if hasattr(response, 'choices') and len(response.choices) > 0:
+         reply_text = response.choices[0].message.content  # <-- ДОБАВИЛИ [0] ТУТ!
+     else:
+         reply_text = getattr(response, 'text', str(response))
+
             
         reply_text = clean_thought_tags(reply_text)
         await message.reply(reply_text)
