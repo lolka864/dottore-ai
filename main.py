@@ -124,7 +124,7 @@ async def chat_with_dottore(message: types.Message):
             model=AI_MODEL,
             messages=messages_to_send,
             temperature=0.82,
-            max_tokens=500 if mode in ["report", "experiment"] else 60
+            max_tokens=500 if mode in ["report", "experiment"] else 120
         )
         
         # БЕЗОШИБОЧНЫЙ УНИВЕРСАЛЬНЫЙ РАЗБОР ЧЕРЕЗ СЛОВАРЬ (ИСПРАВЛЕНО НАМЕРТВО!)
