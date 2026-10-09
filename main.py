@@ -104,10 +104,13 @@ async def chat_with_dottore(message: types.Message):
             max_tokens=500 if mode == "report" else 60  # Большой лимит для длинных научных справок!
         )
         
-        if hasattr(response, 'choices') and len(response.choices) > 0:
-            reply_text = response.choices.message.content
-        else:
-            reply_text = getattr(response, 'text', str(response))
+            if hasattr(response, 'choices') and len(response.choices) > 0:
+         # Безопасная проверка: считываем и как список, и как одиночный объект
+         choices = response.choices
+         reply_text = choices[0].message.content if isinstance(choices, list) else choices.message.content
+     else:
+         reply_text = getattr(response, 'text', str(response))
+
             
         reply_text = clean_thought_tags(reply_text)
         await message.reply(reply_text, parse_mode="HTML")
