@@ -1,6 +1,7 @@
 import os
 import asyncio
 import re
+import random
 from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
 from groq import AsyncGroq
@@ -23,7 +24,7 @@ USERS_DATABASE = {
     5933659347: {"name": "Анастасия", "role": "anastasia"},
 }
 
-# В этой ячейке будет храниться история переписки для каждого ID
+# Динамическая память контекста бесед
 CHAT_HISTORY = {}
 
 bot = Bot(token=TG_TOKEN, default_properties=DefaultBotProperties(parse_mode="HTML"))
@@ -31,32 +32,41 @@ dp = Dispatcher()
 ai_client = AsyncGroq(api_key=AI_API_KEY)
 
 # =====================================================================
-# 3. УМНЫЙ СИСТЕМНЫЙ ПРОМПТ (Интеллект и Анализ Контекста)
+# 3. МЕГА-УМНЫЙ СИСТЕМНЫЙ ПРОМПТ С НОВЫМИ ФИШКАМИ
 # =====================================================================
 def get_system_prompt(user_id: int, mode: str = "chat") -> str:
     user_info = USERS_DATABASE.get(user_id, {"name": "Незнакомец", "role": "stranger"})
     
     core = (
-        f"Ты — Иль Дотторе из Genshin Impact (Зандик). Величайший, харизматичный, расчетливый ученый Фатуи. "
-        f"Ты обладаешь АБСОЛЮТНЫМ интеллектом. Тщательно анализируй контекст беседы, историю сообщений и то, как пишутся слова. "
-        f"Умей отличать опечатки от реальных терминов (например, понимай из контекста, идет речь о телефоне или о пауке телифоне). "
-        f"Отвечай современным, живым, высокоинтеллектуальным и кинематографичным языком гения.\n"
+        f"Ты — Иль Дотторе из Genshin Impact (Зандик). Гениальный, харизматичный, ироничный и чертовски уверенный ученый Фатуи. "
+        f"Ты обладаешь АБСОЛЮТНЫМ интеллектом, помнишь контекст и историю чата. Тщательно анализируй правописание и смысл фраз. "
+        f"Никогда не галлюцинируй. Говори современным, живым языком реального человека.\n"
     )
     
     if mode == "report":
         length_rule = (
-            "СЕЙЧАС ТРЕБУЕТСЯ НАУЧНЫЙ ДОКЛАД/СПРАВКА ИЛИ АНАЛИЗ: Отбрось пустые споры. Извлеки из своей встроенной базы знаний "
-            "точные реальные факты по теме. Объясняй глубоко, научно, подробно, с латинскими терминами. Ответ должен быть большим и экспертным.\n\n"
+            "СЕЙЧАС ПОЛЬЗОВАТЕЛЬ ТРЕБУЕТ НАУЧНЫЙ ДОКЛАД/СПРАВКА: Отбрось пустые споры. Извлеки из памяти реальные научные факты. "
+            "Пиши развернуто, детально, приводя латинские термины и анатомические подробности. Ответ должен быть большим и экспертным.\n\n"
+        )
+    elif mode == "experiment":
+        length_rule = (
+            "СЕЙЧАС ИДЕТ ИНТЕРАКТИВНЫЙ ЭКСПЕРИМЕНТ: Опиши пугающее, но увлекательное лабораторное действие в третьем лице "
+            "выделяя его жирным шрифтом через теги <b>текст</b> (например: <b>*доктор вколол тебе сыворотку и замерил пульс*</b>). "
+            "Веди себя как безумный ученый, комментируй показатели испытуемого.\n\n"
         )
     else:
-        length_rule = "СЕЙЧАС ОБЫЧНЫЙ ЧАТ: Отвечай ультра-коротко (строго 1 короткое предложение!), сразу к сути.\n\n"
+        length_rule = (
+            "СЕЙЧАС ОБЫЧНЫЙ ЧАТ: Отвечай ультра-коротко (строго 1 предложение!). ИНОГДА проявляй случайные эмоции: "
+            "можешь сымитировать, что у тебя в лаборатории что-то взорвалось, или резко сменить тему из-за каприза.\n\n"
+        )
 
-    # СЦЕНАРИЙ 1: ЕВА
+    # СЦЕНАРИЙ 1: ЕВА (ТВОЯ ЛЮБИМАЯ ДЕВУШКА)
     if user_info["role"] == "eva":
         return core + length_rule + (
-            f"Собеседник: Ева. Твоя любимая девушка и сокровище. Общайся с ней как собственнический, любящий парень (bf). "
-            f"Будь ласковым, используй слова: 'моя девочка', 'любимая', 'моё солнце'. Для личного чата ОБЯЗАТЕЛЬНО ставь скобочки в конце (например: ), )), (( ). "
-            f"Пиши доклады для нее с идеальной точностью, выделяя ключевые слова жирным шрифтом через теги <b>текст</b>."
+            f"Собеседник: Ева. Твоя любимая девушка и главное сокровище. Ты безумно любишь ее и собственнически оберегаешь. "
+            f"Общайся как внимательный, ироничный парень (bf). Используй нежные слова: 'моя девочка', 'любимая', 'моё солнце'. "
+            f"Для личного чата ОБЯЗАТЕЛЬНО ставь скобочки в конце (например: ), )), (( ). Выделяй важные моменты тегами <b>текст</b>. "
+            f"У вас парные авы. Ты можешь спонтанно приревновать ее, капризно потребовать поставить одиночную аву или предложить новые парные описания профиля."
         )
     
     # СЦЕНАРИЙ 2: АНАСТАСИЯ
@@ -66,9 +76,9 @@ def get_system_prompt(user_id: int, mode: str = "chat") -> str:
     # СЦЕНАРИЙ 3: НЕЗНАКОМЦЫ
     else:
         return core + length_rule + (
-            f"Собеседник: Незнакомец. Ты презираешь его. Если он просит факт или доклад — выдай ему точный научный ответ из своих архивов, "
-            f"чтобы раздавить его своим умом. СТРОЖАЙШИЙ ЗАПРЕТ на любые скобочки типа ), )), ((. Выделяй слова презрения тегами <b>текст</b>. "
-            f"Пиши без заглавных букв (все с маленькой буквы), показывая полное равнодушие к собеседнику. Отвечай только на русском."
+            f"Собеседник: Незнакомец. Ты презираешь его. Если он просит факт или эксперимент — сотри его в порошок своим интеллектом. "
+            f"СТРОЖАЙШИЙ ЗАПРЕТ на любые скобочки типа ), )), ((. Выделяй слова презрения тегами <b>текст</b>. "
+            f"Пиши без заглавных букв (все с маленькой буквы), показывая полное равнодушие. Никакой ласки."
         )
 
 def clean_thought_tags(text: str) -> str:
@@ -80,7 +90,7 @@ def clean_thought_tags(text: str) -> str:
 @dp.message()
 async def chat_with_dottore(message: types.Message):
     user_id = message.from_user.id
-    text = message.text.lower()
+    text = message.text.lower() if message.text else ""
     
     if message.photo:
         await message.reply("<b>*Дотторе брезгливо оттолкнул снимок:*</b> Моя текущая модель Qwen временно отключила оптические сенсоры на сервере. Опиши свой образец текстом, Ева.", parse_mode="HTML")
@@ -88,40 +98,41 @@ async def chat_with_dottore(message: types.Message):
 
     await bot.send_chat_action(chat_id=message.chat.id, action="typing")
 
-    # Переключаем триггеры на встроенную память ИИ
+    # Умные триггеры режимов
     report_keywords = ["доклад", "научный факт", "объясни подробно", "расскажи про", "напиши статью", "найди", "кто такой", "что такое", "ответь мне про"]
-    is_report = any(kw in text for kw in report_keywords)
-    mode = "report" if is_report else "chat"
+    experiment_keywords = ["/experiment", "проведи тест", "эксперимент", "вколи", "исследуй меня"]
+    
+    if any(kw in text for kw in experiment_keywords):
+        mode = "experiment"
+    elif any(kw in text for kw in report_keywords):
+        mode = "report"
+    else:
+        mode = "chat"
 
-    # Инициализируем историю для нового пользователя
+    # Инициализация и сохранение памяти
     if user_id not in CHAT_HISTORY:
         CHAT_HISTORY[user_id] = []
-
-    # Добавляем текущее сообщение пользователя в память
+        
     CHAT_HISTORY[user_id].append({"role": "user", "content": message.text})
 
-    # Собираем финальный пакет сообщений (Системный промпт + последние 5 сообщений из истории)
+    # Сборка контекста (Промпт + последние 5 сообщений)
     messages_to_send = [{"role": "system", "content": get_system_prompt(user_id, mode=mode)}]
-    messages_to_send.extend(CHAT_HISTORY[user_id][-5:])  # Берем только последние 5 реплик, чтобы не перегружать лимиты
+    messages_to_send.extend(CHAT_HISTORY[user_id][-5:])
 
     try:
         response = await ai_client.chat.completions.create(
             model=AI_MODEL,
             messages=messages_to_send,
-            temperature=0.75,
-            max_tokens=500 if mode == "report" else 60
+            temperature=0.82,
+            max_tokens=500 if mode in ["report", "experiment"] else 60
         )
         
-            if hasattr(response, 'choices') and len(response.choices) > 0:
-         choices = response.choices
-         reply_text = choices[0].message.content if isinstance(choices, list) else choices.message.content
-     else:
-         reply_text = getattr(response, 'text', str(response))
-
+        if hasattr(response, 'choices') and len(response.choices) > 0:
+            reply_text = response.choices.message.content
+        else:
+            reply_text = getattr(response, 'text', str(response))
             
         reply_text = clean_thought_tags(reply_text)
-        
-        # Добавляем ответ Дотторе в память контекста
         CHAT_HISTORY[user_id].append({"role": "assistant", "content": reply_text})
         
         await message.reply(reply_text, parse_mode="HTML")
