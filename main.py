@@ -82,7 +82,7 @@ async def chat_with_dottore(message: types.Message):
         )
         
         if hasattr(response, 'choices') and len(response.choices) > 0:
-            reply_text = response.choices.message.content
+            reply_text = response.choices[0].message.content
         else:
             reply_text = getattr(response, 'text', str(response))
             
