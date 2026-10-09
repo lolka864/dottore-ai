@@ -68,29 +68,14 @@ async def chat_with_dottore(message: types.Message):
             temperature=0.85
         )
         
-        reply_text = response.choices.message.content
+        # ЖЕЛЕЗОБЕТОННОЕ ИЗВЛЕЧЕНИЕ ТЕКСТА ДЛЯ GROQ
+        if hasattr(response, 'choices') and len(response.choices) > 0:
+            reply_text = response.choices[0].message.content  # Добавили, теперь список не сломает код!
+        else:
+            reply_text = getattr(response, 'text', str(response))
+            
         reply_text = clean_thought_tags(reply_text)
-        
         await message.reply(reply_text)
+        
     except Exception as e:
         await message.reply(f"*Дотторе раздраженно постучал по приборам:* Ошибка связи: {e}")
-
-# --- ЗАПУСК БОТА С ВЕБ-СЕРВЕРОМ ДЛЯ ОБМАНА ХОСТИНГА ---
-async def start_fake_server():
-    """Создает порт, чтобы бесплатный Render думал, что это сайт"""
-    app = web.Application()
-    app.router.add_get('/', lambda r: web.Response(text="Лаборатория Дотторе активна."))
-    runner = web.AppRunner(app)
-    await runner.setup()
-    # Сервер автоматически займет порт 10000, который требует Render
-    site = web.TCPSite(runner, '0.0.0.0', 10000)
-    await site.start()
-
-async def main():
-    print("Запуск фонового веб-сервера...")
-    await start_fake_server()
-    print("Дотторе успешно запущен на удаленном сервере!")
-    await dp.start_polling(bot)
-
-if __name__ == "__main__":
-    asyncio.run(main())
