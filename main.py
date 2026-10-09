@@ -112,10 +112,12 @@ async def chat_with_dottore(message: types.Message):
             max_tokens=500 if mode == "report" else 60
         )
         
-        if hasattr(response, 'choices') and len(response.choices) > 0:
-            reply_text = response.choices.message.content
-        else:
-            reply_text = getattr(response, 'text', str(response))
+            if hasattr(response, 'choices') and len(response.choices) > 0:
+         choices = response.choices
+         reply_text = choices[0].message.content if isinstance(choices, list) else choices.message.content
+     else:
+         reply_text = getattr(response, 'text', str(response))
+
             
         reply_text = clean_thought_tags(reply_text)
         
