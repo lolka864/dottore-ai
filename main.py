@@ -108,6 +108,12 @@ async def chat_with_dottore(message: types.Message):
         await message.reply("<b>*Дотторе брезгливо оттолкнул снимок:*</b> Моя текущая модель Qwen временно отключила оптические сенсоры на сервере. Опиши свой образец текстом, Ева.", parse_mode="HTML")
         return
 
+        # ЗАЩИТА ОТ СТИКЕРОВ И ПУСТЫХ СООБЩЕНИЙ
+    if not message.text:
+        await message.reply("<b>*Дотторе хмуро взглянул на объект:*</b> Твои невербальные сигналы и стикеры не несут научной ценности. Выражай мысли текстом.")
+        return
+
+
     await bot.send_chat_action(chat_id=message.chat.id, action="typing")
 
     # Умные триггеры режимов
