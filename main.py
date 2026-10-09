@@ -68,14 +68,15 @@ async def chat_with_dottore(message: types.Message):
             temperature=0.85
         )
         
-        # Железобетонное извлечение текста
+        # ЖЕЛЕЗОБЕТОННОЕ ИЗВЛЕЧЕНИЕ ТЕКСТА ДЛЯ GROQ (ИСПРАВЛЕНО!)
         if hasattr(response, 'choices') and len(response.choices) > 0:
-            reply_text = response.choices.message.content
+            reply_text = response.choices[0].message.content
         else:
             reply_text = getattr(response, 'text', str(response))
             
         reply_text = clean_thought_tags(reply_text)
         await message.reply(reply_text)
+        
     except Exception as e:
         await message.reply(f"*Дотторе раздраженно постучал по приборам:* Ошибка связи: {e}")
 
@@ -97,4 +98,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
