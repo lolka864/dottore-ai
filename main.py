@@ -77,7 +77,7 @@ async def chat_with_dottore(message: types.Message):
                 {"role": "system", "content": get_system_prompt(user_id)},
                 {"role": "user", "content": message.text}
             ],
-            temperature=0.85
+            temperature=0.85,
             max_tokens=30
         )
         
