@@ -12,6 +12,7 @@ from aiohttp import web
 TG_TOKEN = os.getenv("TG_TOKEN")
 AI_API_KEY = os.getenv("AI_API_KEY")
 
+# Используем единственную рабочую текстовую модель на Groq
 AI_MODEL = "qwen/qwen3.8-27b" 
 
 # =====================================================================
@@ -22,6 +23,7 @@ USERS_DATABASE = {
     5933659347: {"name": "Анастасия", "role": "anastasia"},
 }
 
+# НАСТРОИЛИ ДЛЯ ВСЕГО БОТА НАДЕЖНЫЙ parse_mode="HTML"
 bot = Bot(token=TG_TOKEN, default_properties=DefaultBotProperties(parse_mode="HTML"))
 dp = Dispatcher()
 ai_client = AsyncGroq(api_key=AI_API_KEY)
@@ -88,7 +90,7 @@ async def chat_with_dottore(message: types.Message):
     await bot.send_chat_action(chat_id=message.chat.id, action="typing")
 
     # Переключаем триггеры на встроенную память ИИ
-    report_keywords = ["доклад", "научный факт", "объясни подробно", "расскажи про", "напиши статью", "найди", "кто такой", "что такое"]
+    report_keywords = ["доклад", "научный факт", "объясни подробно", "расскажи про", "напиши статью", "найди", "кто такой", "что такое", "ответь мне что"]
     is_report = any(kw in text for kw in report_keywords)
     
     mode = "report" if is_report else "chat"
@@ -101,16 +103,15 @@ async def chat_with_dottore(message: types.Message):
                 {"role": "user", "content": message.text}
             ],
             temperature=0.75,
-            max_tokens=500 if mode == "report" else 60  # Большой лимит для длинных научных справок!
+            max_tokens=500 if mode == "report" else 60
         )
         
-            if hasattr(response, 'choices') and len(response.choices) > 0:
-         # Безопасная проверка: считываем и как список, и как одиночный объект
-         choices = response.choices
-         reply_text = choices[0].message.content if isinstance(choices, list) else choices.message.content
-     else:
-         reply_text = getattr(response, 'text', str(response))
-
+        # ЖЕЛЕЗОБЕТОННОЕ ИЗВЛЕЧЕНИЕ ДЛЯ ЛЮБОГО ФОРМАТА GROQ С ИДЕАЛЬНЫМИ ОТСТУПАМИ
+        if hasattr(response, 'choices') and len(response.choices) > 0:
+            choices = response.choices
+            reply_text = choices[0].message.content if isinstance(choices, list) else choices.message.content
+        else:
+            reply_text = getattr(response, 'text', str(response))
             
         reply_text = clean_thought_tags(reply_text)
         await message.reply(reply_text, parse_mode="HTML")
