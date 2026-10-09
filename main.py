@@ -71,9 +71,7 @@ def clean_thought_tags(text: str) -> str:
     """Удаляет внутренние технические размышления модели <think>"""
     if not text:
         return ""
-    # Очищаем также возможные остатки старых звездочек, если ИИ их случайно вспомнит
-    cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
-    return cleaned
+    return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
 
 # --- ОБРАБОТКА ОБЫЧНОГО ТЕКСТА ---
 @dp.message()
@@ -98,11 +96,11 @@ async def chat_with_dottore(message: types.Message):
             max_tokens=60
         )
         
-             if hasattr(response, 'choices') and len(response.choices) > 0:
-         reply_text = response.choices[0].message.content  # <-- ДОБАВИЛИ [0] ТУТ!
-     else:
-         reply_text = getattr(response, 'text', str(response))
-
+        # ЖЕЛЕЗОБЕТОННОЕ ИЗВЛЕЧЕНИЕ С ИДЕАЛЬНЫМИ ОТСТУПАМИ
+        if hasattr(response, 'choices') and len(response.choices) > 0:
+            reply_text = response.choices[0].message.content
+        else:
+            reply_text = getattr(response, 'text', str(response))
             
         reply_text = clean_thought_tags(reply_text)
         await message.reply(reply_text)
