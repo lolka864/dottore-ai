@@ -96,11 +96,13 @@ async def chat_with_dottore(message: types.Message):
             max_tokens=60
         )
         
-             if hasattr(response, 'choices') and len(response.choices) > 0:
-         reply_text = response.choices[0].message.content  # <--- ЗДЕСЬ ДОБАВИЛИ!
-     else:
-         reply_text = getattr(response, 'text', str(response))
-
+        # ИДЕАЛЬНО ВЫРОВНЕННЫЕ ОТСТУПЫ И КОРРЕКТНЫЙ ИНДЕКС [0]
+        if hasattr(response, 'choices') and len(response.choices) > 0:
+            reply_text = response.choices[0].message.content
+        else:
+            reply_text = getattr(response, 'text', str(response))
+            
+        reply_text = clean_thought_tags(reply_text)
         await message.reply(reply_text, parse_mode="HTML")
     except Exception as e:
         await message.reply(f"<b>*Дотторе раздраженно постучал по приборам:*</b> Ошибка связи: {e}", parse_mode="HTML")
