@@ -84,7 +84,19 @@ def get_system_prompt(user_id: int, mode: str = "chat") -> str:
 def clean_thought_tags(text: str) -> str:
     if not text:
         return ""
-    return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+    # 1. Удаляем внутренние размышления модели <think>...</think>
+    text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+    
+    # 2. ЖЕСТКАЯ ЗАЩИТА: Находим все теги в тексте
+    all_tags = re.findall(r'<([^>]+)>', text)
+    for tag in all_tags:
+        clean_tag = tag.strip().lower().replace('/', '')
+        # Если тег НЕ является разрешенным жирным или курсивом, полностью вырезаем его
+        if clean_tag not in ['b', 'i']:
+            text = text.replace(f"<{tag}>", "")
+            
+    return text.strip()
+
 
 # --- ОБРАБОТКА ОБЫЧНОГО ТЕКСТА ---
 @dp.message()
