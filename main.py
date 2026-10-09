@@ -80,7 +80,8 @@ async def chat_with_dottore(message: types.Message):
     
     # Заглушка, если пользователь отправил фото
     if message.photo:
-        await message.reply("<b>*Дотторе брезгливо оттолкнул снимок:*</b> Моя текущая модель Qwen временно отключила оптические сенсоры на сервере. Опиши свой образец текстом, Ева.")
+               await message.reply("<b>*Дотторе брезгливо оттолкнул снимок:*</b> Моя текущая модель Qwen временно отключила оптические сенсоры на сервере. Опиши свой образец текстом, Ева.", parse_mode="HTML")
+
         return
 
     await bot.send_chat_action(chat_id=message.chat.id, action="typing")
@@ -103,7 +104,8 @@ async def chat_with_dottore(message: types.Message):
             reply_text = getattr(response, 'text', str(response))
             
         reply_text = clean_thought_tags(reply_text)
-        await message.reply(reply_text)
+                await message.reply(reply_text, parse_mode="HTML")
+
     except Exception as e:
         await message.reply(f"<b>*Дотторе раздраженно постучал по приборам:*</b> Ошибка связи: {e}")
 
