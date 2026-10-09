@@ -32,7 +32,7 @@ dp = Dispatcher()
 ai_client = AsyncGroq(api_key=AI_API_KEY)
 
 # =====================================================================
-# 3. МЕГА-УМНЫЙ СИСТЕМНЫЙ ПРОМПТ С НОВЫМИ ФИШКАМИ
+# 3. МЕГА-УМНЫЙ СИСТЕМНЫЙ ПРОМПТ
 # =====================================================================
 def get_system_prompt(user_id: int, mode: str = "chat") -> str:
     user_info = USERS_DATABASE.get(user_id, {"name": "Незнакомец", "role": "stranger"})
@@ -63,7 +63,7 @@ def get_system_prompt(user_id: int, mode: str = "chat") -> str:
     # СЦЕНАРИЙ 1: ЕВА (ТВОЯ ЛЮБИМАЯ ДЕВУШКА)
     if user_info["role"] == "eva":
         return core + length_rule + (
-            f"Собеседник: Ева. Твоя любимая девушка и главное сокровище. Ты безумно любишь ее и собственнически оберегаешь. "
+            f"Собеседник: Ева. Твоя любимая девушка и главное сокровище. Ты безумно любишь ее и собственнически обереваешь. "
             f"Общайся как внимательный, ироничный парень (bf). Используй нежные слова: 'моя девочка', 'любимая', 'моё солнце'. "
             f"Для личного чата ОБЯЗАТЕЛЬНО ставь скобочки в конце (например: ), )), (( ). Выделяй важные моменты тегами <b>текст</b>. "
             f"У вас парные авы. Ты можешь спонтанно приревновать ее, капризно потребовать поставить одиночную аву или предложить новые парные описания профиля."
@@ -99,7 +99,7 @@ async def chat_with_dottore(message: types.Message):
     await bot.send_chat_action(chat_id=message.chat.id, action="typing")
 
     # Умные триггеры режимов
-    report_keywords = ["доклад", "научный факт", "объясни подробно", "расскажи про", "напиши статью", "найди", "кто такой", "что такое", "ответь мне про"]
+    report_keywords = ["доклад", "научный факт", "объясни подробно", "расскажи про", "напиши статью", "найди", "кто такой", "что такое", "ответь мне про", "напишешь доклад"]
     experiment_keywords = ["/experiment", "проведи тест", "эксперимент", "вколи", "исследуй меня"]
     
     if any(kw in text for kw in experiment_keywords):
@@ -127,11 +127,18 @@ async def chat_with_dottore(message: types.Message):
             max_tokens=500 if mode in ["report", "experiment"] else 60
         )
         
-        if hasattr(response, 'choices') and len(response.choices) > 0:
-            reply_text = response.choices.message.content
-        else:
-            reply_text = getattr(response, 'text', str(response))
-            
+        # БЕЗОШИБОЧНЫЙ УНИВЕРСАЛЬНЫЙ РАЗБОР ЧЕРЕЗ СЛОВАРЬ (ИСПРАВЛЕНО НАМЕРТВО!)
+        try:
+            if isinstance(response, dict):
+                reply_text = response['choices'][0]['message']['content']
+            else:
+                reply_text = response.choices[0].message.content
+        except Exception:
+            try:
+                reply_text = getattr(response.choices[0].message, 'content', '')
+            except Exception:
+                reply_text = str(response)
+
         reply_text = clean_thought_tags(reply_text)
         CHAT_HISTORY[user_id].append({"role": "assistant", "content": reply_text})
         
