@@ -2,6 +2,7 @@ import os
 import asyncio
 import re
 from aiogram import Bot, Dispatcher, types
+from aiogram.client.default import DefaultBotProperties  # ПРАВИЛЬНЫЙ ИМПОРТ ШРИФТОВ
 from groq import AsyncGroq
 from aiohttp import web
 
@@ -22,9 +23,8 @@ USERS_DATABASE = {
     5933659347: {"name": "Анастасия", "role": "anastasia"},
 }
 
-# Включаем встроенную поддержку жирного текста во всем боте
-bot = Bot(token=TG_TOKEN, parse_mode="Markdown")
-
+# Инициализация бота с правильной поддержкой жирного текста Markdown
+bot = Bot(token=TG_TOKEN, default_properties=DefaultBotProperties(parse_mode="Markdown"))
 dp = Dispatcher()
 ai_client = AsyncGroq(api_key=AI_API_KEY)
 
@@ -67,7 +67,6 @@ def get_system_prompt(user_id: int) -> str:
             f"- Пиши без заглавных букв (с маленькой буквы в начале строк), показывая полное равнодушие к собеседнику. Никаких смайликов и скобочек типа ), )), ((. Отвечай только на русском."
         )
 
-
 def clean_thought_tags(text: str) -> str:
     """Удаляет внутренние технические размышления модели <think>"""
     if not text:
@@ -94,7 +93,7 @@ async def chat_with_dottore(message: types.Message):
                 {"role": "user", "content": message.text}
             ],
             temperature=0.85,
-            max_tokens=60  # Оптимальное ограничение, защищает от ошибки 429 и обрывов предложений
+            max_tokens=60
         )
         
         if hasattr(response, 'choices') and len(response.choices) > 0:
