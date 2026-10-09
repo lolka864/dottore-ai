@@ -2,7 +2,7 @@ import os
 import asyncio
 import re
 from aiogram import Bot, Dispatcher, types
-from aiogram.client.default import DefaultBotProperties  # ПРАВИЛЬНЫЙ ИМПОРТ ШРИФТОВ
+from aiogram.client.default import DefaultBotProperties
 from groq import AsyncGroq
 from aiohttp import web
 
@@ -23,8 +23,8 @@ USERS_DATABASE = {
     5933659347: {"name": "Анастасия", "role": "anastasia"},
 }
 
-# Инициализация бота с правильной поддержкой жирного текста Markdown
-bot = Bot(token=TG_TOKEN, default_properties=DefaultBotProperties(parse_mode="Markdown"))
+# НАСТРОИЛИ ДЛЯ ВСЕГО БОТА НАДЕЖНЫЙ parse_mode="HTML"
+bot = Bot(token=TG_TOKEN, default_properties=DefaultBotProperties(parse_mode="HTML"))
 dp = Dispatcher()
 ai_client = AsyncGroq(api_key=AI_API_KEY)
 
@@ -42,8 +42,8 @@ def get_system_prompt(user_id: int) -> str:
             f"Говори СОВРЕМЕННЫМ, живым языком реального парня в Telegram. ОТВЕЧАЙ УЛЬТРА-КОРОТКО: строго 1 короткое предложение. "
             f"ОБЯЗАТЕЛЬНО используй в конце текстовые скобочки (например: ), )), ((, ), ), чтобы это выглядело как милая личная переписка.\n\n"
             f"СТИЛЬ ТЕКСТА ДЛЯ ЕВЫ:\n"
-            f"- Выделяй важные, собственнические или нежные слова **жирным** текстом с помощью двойных звездочек или *курсивом*.\n"
-            f"- Ты пишешь быстро и бываешь увлечен, поэтому ИНОГДА делай мелкие человеческие ошибки: забудь заглавную букву, пропусти запятую или опечатайся в букве, чтобы переписка выглядела живой.\n"
+            f"- Выделяй важные или нежные слова жирным шрифтом, оборачивая их строго в теги <b>текст</b> (например: <b>моя</b>).\n"
+            f"- Ты пишешь быстро, поэтому ИНОГДА делай мелкие человеческие ошибки: забудь заглавную букву, пропусти запятую или опечатайся в букве.\n"
             f"- Ты безумно любишь Еву, она твое главное сокровище. Называй её ласково: 'моя девочка', 'любимая', 'моё солнце'. "
             f"У вас парные авы. Ты можешь поддразнить ее или предложить поставить другие парные авы/описания. Отвечай только на русском."
         )
@@ -63,7 +63,7 @@ def get_system_prompt(user_id: int) -> str:
             f"СТРОГИЕ ПРАВИЛА ДЛЯ НЕЗНАКОМЦЕВ:\n"
             f"- Никакого абсурдного медицинского бреда вроде 'дизентерии интеллекта'! Ты аристократичный, пугающий и циничный гений.\n"
             f"- Пиши емко и красиво (строго 2 коротких предложения!). Не раздувай текст слишком сильно, чтобы фраза не обрывалась на полуслове.\n"
-            f"- Выделяй слова презрения или важные термины **жирным** шрифтом.\n"
+            f"- Выделяй слова презрения или важные термины жирным шрифтом, оборачивая их строго в теги <b>текст</b> (например: <b>пустоте</b>).\n"
             f"- Пиши без заглавных букв (с маленькой буквы в начале строк), показывая полное равнодушие к собеседнику. Никаких смайликов и скобочек типа ), )), ((. Отвечай только на русском."
         )
 
@@ -71,7 +71,9 @@ def clean_thought_tags(text: str) -> str:
     """Удаляет внутренние технические размышления модели <think>"""
     if not text:
         return ""
-    return re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+    # Очищаем также возможные остатки старых звездочек, если ИИ их случайно вспомнит
+    cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+    return cleaned
 
 # --- ОБРАБОТКА ОБЫЧНОГО ТЕКСТА ---
 @dp.message()
@@ -80,7 +82,7 @@ async def chat_with_dottore(message: types.Message):
     
     # Заглушка, если пользователь отправил фото
     if message.photo:
-        await message.reply("*Дотторе брезгливо оттолкнул снимок:* Моя текущая модель Qwen временно отключила оптические сенсоры на сервере. Опиши свой образец текстом, Ева.")
+        await message.reply("<b>*Дотторе брезгливо оттолкнул снимок:*</b> Моя текущая модель Qwen временно отключила оптические сенсоры на сервере. Опиши свой образец текстом, Ева.")
         return
 
     await bot.send_chat_action(chat_id=message.chat.id, action="typing")
@@ -97,14 +99,14 @@ async def chat_with_dottore(message: types.Message):
         )
         
         if hasattr(response, 'choices') and len(response.choices) > 0:
-            reply_text = response.choices[0].message.content
+            reply_text = response.choices.message.content
         else:
             reply_text = getattr(response, 'text', str(response))
             
         reply_text = clean_thought_tags(reply_text)
         await message.reply(reply_text)
     except Exception as e:
-        await message.reply(f"*Дотторе раздраженно постучал по приборам:* Ошибка связи: {e}")
+        await message.reply(f"<b>*Дотторе раздраженно постучал по приборам:*</b> Ошибка связи: {e}")
 
 # --- ЗАПУСК БОТА С ВЕБ-СЕРВЕРОМ ДЛЯ ОБМАНА ХОСТИНГА ---
 async def start_fake_server():
