@@ -124,10 +124,11 @@ async def chat_with_dottore(message: types.Message):
             max_tokens=500 if mode in ["report", "experiment"] else 120
         )
         
-        if hasattr(response, 'choices') and len(response.choices) > 0:
-            reply_text = response.choices.message.content
-        else:
-            reply_text = getattr(response, 'text', str(response))
+           if hasattr(response, 'choices') and len(response.choices) > 0:
+         reply_text = response.choices[0].message.content  # <--- ДОБАВИЛИ ИНДЕКС!
+     else:
+         reply_text = getattr(response, 'text', str(response))
+
             
         reply_text = clean_thought_tags(reply_text)
         CHAT_HISTORY[user_id].append({"role": "assistant", "content": reply_text})
